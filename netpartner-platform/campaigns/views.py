@@ -1,6 +1,8 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.decorators.http import require_POST
 from django.db.models import Count, Q, Sum
+from django.contrib.auth.decorators import login_required
+
 from .models import Campaign, Application
 from .forms import CampaignForm
 
@@ -106,3 +108,22 @@ def update_application(request, application_id, action):
         return redirect("campaign_tracker", campaign_id=application.campaign_id)
 
     return redirect("home")
+
+@login_required
+def creator_home(request):
+    creator = getattr(request.user, "creator", None)
+    rows = []
+    if creator:
+        applied = {a.campaign_id: a for a in creator.applications.all()}
+        campaigns = Campaign.objects.select_related("brand").order_by("post_by")
+        rows = [{"campaign": c, "application": applied.get(c.id)} for c in campaigns]
+    return render(request, "campaigns/creator_home.html", {"creator": creator, "rows": rows})
+
+@login_required
+@require_POST
+def apply(request, campaign_id):
+    creator = getattr(request.user, "creator", None)
+    if creator:
+        campaign = get_object_or_404(Campaign, id=campaign_id)
+        Application.objects.get_or_create(creator=creator, campaign=campaign)
+    return redirect("creator_home")

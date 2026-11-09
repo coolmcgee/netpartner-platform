@@ -1,0 +1,49 @@
+{% extends "campaigns/base.html" %}
+
+{% block title %}Campaigns for you · NetPartner{% endblock %}
+
+{% block content %}
+{% if not creator %}
+  <div>
+    <span class="eyebrow">Not linked</span>
+    <h1>This login isn't a creator yet</h1>
+    <p class="muted">Link it in Admin → Creators → pick a creator → set User.</p>
+  </div>
+{% else %}
+  <div class="page-head">
+    <div>
+      <span class="eyebrow">@{{ creator.handle }} · {{ creator.tier }}</span>
+      <h1>Campaigns for you</h1>
+      <p class="muted">Apply, and the brand picks who they work with.</p>
+    </div>
+    <div class="spots">
+      <span class="label">Your Rating</span>
+      <span class="big">{{ creator.rating }}</span>
+    </div>
+  </div>
+
+  <section class="panel">
+    <h2>Open campaigns</h2>
+    {% for row in rows %}
+      <div class="row">
+        <span class="row-title">
+          <strong>{{ row.campaign.name }}</strong>
+          <span class="small">{{ row.campaign.brand.name }} · post by {{ row.campaign.post_by }}</span>
+          <span class="small">{{ row.campaign.brief|truncatechars:90 }}</span>
+        </span>
+        <span class="small">${{ row.campaign.budget|floatformat:"2g" }} budget</span>
+        {% if row.application %}
+          <span class="pill {% if row.application.status == 'accepted' %}lime{% elif row.application.status == 'rejected' %}grey{% endif %}">{{ row.application.get_status_display }}</span>
+        {% else %}
+          <form method="post" action="{% url 'apply' row.campaign.id %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-sm">Apply</button>
+          </form>
+        {% endif %}
+      </div>
+    {% empty %}
+      <p class="empty">No campaigns yet.</p>
+    {% endfor %}
+  </section>
+{% endif %}
+{% endblock %}

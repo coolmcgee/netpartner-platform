@@ -1,4 +1,5 @@
 from django.db import models
+from django.conf import settings
 
 class Brand(models.Model):
     name = models.CharField(max_length=100)
@@ -25,6 +26,7 @@ class Creator(models.Model):
     niche = models.CharField(max_length=50)
     followers = models.PositiveIntegerField(default=0)
     rating = models.PositiveIntegerField(default=50)  # everyone starts at 50
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="creator",)
 
     @property
     def tier(self):
@@ -55,6 +57,11 @@ class Application(models.Model):
         VERIFIED = "verified", "Verified"
         PAID = "paid", "Paid"
         MISSED = "missed", "Missed"
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["creator", "campaign"], name="one_application_per_campaign"),
+        ]
 
     creator = models.ForeignKey(Creator, on_delete=models.CASCADE, related_name="applications")
     campaign = models.ForeignKey(Campaign, on_delete=models.CASCADE, related_name="applications")

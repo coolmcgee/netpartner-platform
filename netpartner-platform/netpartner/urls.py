@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.urls import path
 from campaigns import views
+from django.urls import path, include
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -9,4 +10,7 @@ urlpatterns = [
     path("campaign/<int:campaign_id>/", views.campaign_detail, name="campaign_detail"),
     path("application/<int:application_id>/<str:action>/", views.update_application, name="update_application"),
     path("campaign/<int:campaign_id>/tracker/", views.campaign_tracker, name="campaign_tracker"),
+    path("accounts/", include("django.contrib.auth.urls")),
+    path("creator/", views.creator_home, name="creator_home"),
+    path("campaign/<int:campaign_id>/apply/", views.apply, name="apply"),
 ]

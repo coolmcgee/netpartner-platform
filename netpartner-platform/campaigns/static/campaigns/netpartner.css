@@ -84,3 +84,8 @@ h1 { margin: 6px 0; font-size: 40px; line-height: 1.05; letter-spacing: -0.04em;
 .btn-sm { padding: 8px 14px; font-size: 13px; width: 100%; margin-top: 4px; }
 .btn-lime { background: #D4FF3A; color: #16122B; border-color: #D4FF3A; }
 .btn-lime:hover { background: #C4F020; color: #16122B; }
+
+/* login box + errors */
+.user-box { margin-top: auto; padding: 12px; border-radius: 14px; background: rgba(255,255,255,.06); color: #fff; display: flex; justify-content: space-between; align-items: center; text-decoration: none; font-weight: 700; font-size: 14px; }
+.link-btn { background: none; border: 0; color: #D4FF3A; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+.error { color: #C0264B; font-weight: 700; }

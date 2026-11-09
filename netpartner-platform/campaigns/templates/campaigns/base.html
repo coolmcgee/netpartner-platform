@@ -15,13 +15,29 @@
       <svg width="32" height="32" viewBox="0 0 48 48" aria-hidden="true"><rect width="48" height="48" rx="13" fill="#6A45F5"/><path d="M29 12 19 36" fill="none" stroke="#D4FF3A" stroke-width="6" stroke-linecap="round"/></svg>
       net/partner
     </a>
+
     {% with page=request.resolver_match.url_name %}
     <div class="nav">
-      <a href="{% url 'home' %}" class="{% if page == 'home' or page == 'campaign_detail' or page == 'campaign_tracker' %}active{% endif %}">Overview</a>      <a href="/new/" class="{% if page == 'new_campaign' %}active{% endif %}">New campaign</a>
+      <a href="{% url 'home' %}" class="{% if page == 'home' or page == 'campaign_detail' or page == 'campaign_tracker' %}active{% endif %}">Overview</a>
+      <a href="/new/" class="{% if page == 'new_campaign' %}active{% endif %}">New campaign</a>
+      <a href="{% url 'creator_home' %}" class="{% if page == 'creator_home' %}active{% endif %}">Creator view</a>
       <a href="/admin/">Admin</a>
     </div>
     {% endwith %}
+
+    {% if user.is_authenticated %}
+      <div class="user-box">
+        <span>{{ user.username }}</span>
+        <form method="post" action="{% url 'logout' %}">
+          {% csrf_token %}
+          <button type="submit" class="link-btn">Log out</button>
+        </form>
+      </div>
+    {% else %}
+      <a href="{% url 'login' %}" class="user-box">Log in</a>
+    {% endif %}
   </nav>
+
   <main class="main">
     {% block content %}{% endblock %}
   </main>
