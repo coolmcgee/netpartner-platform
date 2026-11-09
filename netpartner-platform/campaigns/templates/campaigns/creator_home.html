@@ -1,49 +1,81 @@
 {% extends "campaigns/base.html" %}
 
-{% block title %}Campaigns for you · NetPartner{% endblock %}
+{% block title %}Your campaigns · NetPartner{% endblock %}
 
 {% block content %}
-{% if not creator %}
+<div class="page-head">
   <div>
-    <span class="eyebrow">Not linked</span>
-    <h1>This login isn't a creator yet</h1>
-    <p class="muted">Link it in Admin → Creators → pick a creator → set User.</p>
+    <span class="eyebrow">{{ creator.niche }} · {{ creator.tier }} tier</span>
+    <h1>Hey @{{ creator.handle }}</h1>
+    <p class="muted">Pick campaigns, post on time, and your Rating climbs.</p>
+  </div>
+</div>
+
+{% if messages %}
+  {% for message in messages %}
+    <p class="pill grey">{{ message }}</p>
+  {% endfor %}
+{% endif %}
+
+{% if creator.is_paused %}
+  <div class="card rejected">
+    <h2>Applying is paused</h2>
+    <p class="muted">You've missed 3 posts in 90 days, so you can't apply for 2 weeks. Your Rating will climb back with on-time posts.</p>
+  </div>
+{% endif %}
+
+<div class="stats">
+  <div class="stat"><span class="label">Tier</span><span class="big">{{ creator.tier }}</span></div>
+  <div class="stat dark"><span class="label">Rating</span><span class="big">{{ creator.rating }}</span></div>
+  <div class="stat"><span class="label">Followers</span><span class="big">{{ creator.followers }}</span></div>
+</div>
+
+<h2>Open campaigns</h2>
+<div class="grid-2">
+  {% for campaign in campaigns %}
+    <article class="card">
+      <div class="card-head">
+        <span class="avatar">{{ campaign.brand.name|first|upper }}</span>
+        <div class="who">
+          <h2>{{ campaign.name }}</h2>
+          <span class="small">{{ campaign.brand.name }}</span>
+        </div>
+        <span class="pill">${{ campaign.budget|floatformat:"0g" }}</span>
+      </div>
+
+      <p class="muted">{{ campaign.brief|truncatewords:25 }}</p>
+
+      <div class="metrics">
+        <div><span>Post by</span><strong>{{ campaign.post_by|date:"j M" }}</strong></div>
+      </div>
+
+      {% if campaign.id in applied_ids %}
+        <span class="pill lime">Applied</span>
+      {% elif creator.is_paused %}
+        <span class="pill grey">Paused</span>
+      {% else %}
+        <form method="post" action="{% url 'apply' campaign.id %}">
+          {% csrf_token %}
+          <button type="submit" class="btn">Apply</button>
+        </form>
+      {% endif %}
+    </article>
+  {% empty %}
+    <p class="empty">No campaigns open right now. Check back soon.</p>
+  {% endfor %}
+</div>
+
+<h2>Rating history</h2>
+{% if rating_events %}
+  <div class="grid-2">
+    {% for e in rating_events %}
+      <div class="mini">
+        <strong>{{ e.change|stringformat:"+d" }} · {{ e.reason }}</strong>
+        <span class="small">{{ e.application.campaign.name|default:"" }} · {{ e.created_at|date:"j M" }}</span>
+      </div>
+    {% endfor %}
   </div>
 {% else %}
-  <div class="page-head">
-    <div>
-      <span class="eyebrow">@{{ creator.handle }} · {{ creator.tier }}</span>
-      <h1>Campaigns for you</h1>
-      <p class="muted">Apply, and the brand picks who they work with.</p>
-    </div>
-    <div class="spots">
-      <span class="label">Your Rating</span>
-      <span class="big">{{ creator.rating }}</span>
-    </div>
-  </div>
-
-  <section class="panel">
-    <h2>Open campaigns</h2>
-    {% for row in rows %}
-      <div class="row">
-        <span class="row-title">
-          <strong>{{ row.campaign.name }}</strong>
-          <span class="small">{{ row.campaign.brand.name }} · post by {{ row.campaign.post_by }}</span>
-          <span class="small">{{ row.campaign.brief|truncatechars:90 }}</span>
-        </span>
-        <span class="small">${{ row.campaign.budget|floatformat:"2g" }} budget</span>
-        {% if row.application %}
-          <span class="pill {% if row.application.status == 'accepted' %}lime{% elif row.application.status == 'rejected' %}grey{% endif %}">{{ row.application.get_status_display }}</span>
-        {% else %}
-          <form method="post" action="{% url 'apply' row.campaign.id %}">
-            {% csrf_token %}
-            <button type="submit" class="btn btn-sm">Apply</button>
-          </form>
-        {% endif %}
-      </div>
-    {% empty %}
-      <p class="empty">No campaigns yet.</p>
-    {% endfor %}
-  </section>
+  <p class="empty-col">No changes yet. You start at 50; complete a campaign on time to go up.</p>
 {% endif %}
 {% endblock %}

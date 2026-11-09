@@ -31,10 +31,18 @@
         <div class="mini">
           <strong>@{{ app.creator.handle }}</strong>
           <span class="small">{{ app.creator.tier }} · Rating {{ app.creator.rating }}</span>
+
           {% if column.button %}
             <form method="post" action="{% url 'update_application' app.id 'advance' %}">
               {% csrf_token %}
               <button type="submit" class="btn btn-sm">{{ column.button }}</button>
+            </form>
+          {% endif %}
+
+          {% if column.can_miss %}
+            <form method="post" action="{% url 'update_application' app.id 'missed' %}">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-sm btn-light">Mark missed</button>
             </form>
           {% endif %}
         </div>
@@ -44,4 +52,22 @@
     </div>
   {% endfor %}
 </div>
+
+{% if missed %}
+  <div class="page-head">
+    <div>
+      <span class="eyebrow">Didn't post</span>
+      <h2>Missed ({{ missed|length }})</h2>
+      <p class="muted">You only pay for completed posts. Their Rating has dropped.</p>
+    </div>
+  </div>
+  <div class="grid-2">
+    {% for app in missed %}
+      <div class="mini">
+        <strong>@{{ app.creator.handle }}</strong>
+        <span class="small">{{ app.creator.tier }} · Rating now {{ app.creator.rating }}</span>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
 {% endblock %}
