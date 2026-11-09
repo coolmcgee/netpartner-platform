@@ -130,3 +130,16 @@ MAILERS = {
 LOGIN_URL = "login"
 LOGIN_REDIRECT_URL = "after_login"
 LOGOUT_REDIRECT_URL = "login"
+
+import os
+
+STATIC_ROOT = BASE_DIR / "staticfiles"
+
+# Only runs on the live server (set in the PythonAnywhere WSGI file)
+if os.environ.get("DJANGO_PRODUCTION") == "1":
+    DEBUG = False
+    SECRET_KEY = os.environ["DJANGO_SECRET_KEY"]
+    ALLOWED_HOSTS = ["mcgee.pythonanywhere.com"]
+    CSRF_TRUSTED_ORIGINS = ["https://mcgee.pythonanywhere.com"]
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True

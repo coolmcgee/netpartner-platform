@@ -7,16 +7,29 @@
 
 <div class="page-head">
   <div>
-    <span class="eyebrow">{{ campaign.brand.name }} · ${{ campaign.budget|floatformat:"2g" }} budget · post by {{ campaign.post_by }}</span>
+    <span class="eyebrow">{{ campaign.brand.name }} · {{ campaign.get_campaign_type_display }} · post by {{ campaign.post_by }}</span>
     <h1>Pick your creators</h1>
     <p class="muted">{{ campaign.name }}: {{ campaign.brief }}</p>
+    {% if campaign.approved %}
+      <span class="pill lime">Live to creators</span>
+    {% else %}
+      <span class="pill grey">Waiting for safety check</span>
+    {% endif %}
   </div>
   <div class="spots">
     <span class="label">Accepted</span>
-    <span class="big">{{ accepted_count }} of {{ applications|length }}</span>
+    <span class="big">{{ accepted_count }}{% if campaign.spots %} of {{ campaign.spots }} spots{% else %} of {{ applications|length }}{% endif %}</span>
     <a href="{% url 'campaign_tracker' campaign.id %}" class="btn btn-sm btn-lime">Open tracker →</a>
   </div>
 </div>
+
+<div class="stats">
+  <div class="stat"><span class="label">Budget</span><span class="big">${{ campaign.budget|floatformat:"2g" }}</span></div>
+  <div class="stat"><span class="label">Committed</span><span class="big">${{ committed|floatformat:"2g" }}</span></div>
+  <div class="stat"><span class="label">Pay per creator</span><span class="big">${{ campaign.pay_per_creator|floatformat:"2g" }}</span></div>
+  <div class="stat dark"><span class="label">You pay (incl. fee)</span><span class="big">${{ campaign.total_to_pay|floatformat:"2g" }}</span></div>
+</div>
+<p class="small muted">Budget ${{ campaign.budget|floatformat:"2g" }} + NetPartner fee ${{ campaign.platform_fee|floatformat:"2g" }}. Creators keep 100% of what they're shown. You only pay for completed posts.</p>
 
 <div class="grid-2">
   {% for app in applications %}
@@ -33,6 +46,7 @@
       <div class="metrics">
         <div><span>Rating</span><strong style="color:#4A2FC4">{{ app.creator.rating }}</strong></div>
         <div><span>Followers</span><strong>{{ app.creator.followers }}</strong></div>
+        <div><span>Completed</span><strong>{{ app.creator.completed_count }}</strong></div>
         <div><span>Applied</span><strong>{{ app.applied_at|date:"j M" }}</strong></div>
       </div>
 

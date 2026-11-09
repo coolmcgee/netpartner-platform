@@ -1,0 +1,54 @@
+{% extends "campaigns/base.html" %}
+
+{% block title %}{% if kind == "brand" %}Brand sign up{% else %}Creator sign up{% endif %} · NetPartner{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    {% if kind == "brand" %}
+      <span class="eyebrow">For brands</span>
+      <h1>Work with verified NZ creators</h1>
+      <p class="muted">Post a campaign, pick your creators, and only pay for completed posts.</p>
+    {% else %}
+      <span class="eyebrow">For creators</span>
+      <h1>Brand deals made easy</h1>
+      <p class="muted">Any NZ creator can join, even with zero followers. Start with view campaigns and build your Rating.</p>
+    {% endif %}
+  </div>
+</div>
+
+<form method="post" class="card">
+  {% csrf_token %}
+  {% for error in form.non_field_errors %}
+    <p class="small" style="color:#c0392b">{{ error }}</p>
+  {% endfor %}
+  {% for field in form %}
+    <div class="field">
+      {% if field.field.widget.input_type == "checkbox" %}
+        <label>{{ field }} {{ field.label }}</label>
+      {% else %}
+        <label for="{{ field.id_for_label }}"><strong>{{ field.label }}</strong></label><br>
+        {{ field }}
+        {% if field.help_text and field.name != "password1" %}
+          <br><span class="small muted">{{ field.help_text|safe }}</span>
+        {% endif %}
+      {% endif %}
+      {% for error in field.errors %}
+        <br><span class="small" style="color:#c0392b">{{ error }}</span>
+      {% endfor %}
+    </div>
+    <br>
+  {% endfor %}
+  <button type="submit" class="btn">Create account</button>
+</form>
+
+<p class="small">
+  Already have an account? <a href="{% url 'login' %}">Log in</a>
+  ·
+  {% if kind == "brand" %}
+    Are you a creator? <a href="{% url 'creator_signup' %}">Sign up as a creator</a>
+  {% else %}
+    Are you a brand? <a href="{% url 'brand_signup' %}">Sign up as a brand</a>
+  {% endif %}
+</p>
+{% endblock %}

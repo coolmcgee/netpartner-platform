@@ -5,11 +5,17 @@
 {% block content %}
 <a href="{% url 'campaign_detail' campaign.id %}">← Back to applicants</a>
 
+{% if messages %}
+  {% for message in messages %}
+    <p class="pill grey">{{ message }}</p>
+  {% endfor %}
+{% endif %}
+
 <div class="page-head">
   <div>
     <span class="eyebrow">{{ campaign.brand.name }} · post by {{ campaign.post_by }}</span>
     <h1>{{ campaign.name }}</h1>
-    <p class="muted">Where every creator is up to.</p>
+    <p class="muted">Where every creator is up to. Once a post is verified, NetPartner pays the creator after a 7-day view check.</p>
   </div>
 </div>
 
@@ -30,7 +36,7 @@
       {% for app in column.apps %}
         <div class="mini">
           <strong>@{{ app.creator.handle }}</strong>
-          <span class="small">{{ app.creator.tier }} · Rating {{ app.creator.rating }}</span>
+          <span class="small">{{ app.creator.tier }} · Rating {{ app.creator.rating }}{% if app.amount %} · ${{ app.amount|floatformat:"2g" }}{% endif %}</span>
 
           {% if column.button %}
             <form method="post" action="{% url 'update_application' app.id 'advance' %}">
@@ -44,6 +50,19 @@
               {% csrf_token %}
               <button type="submit" class="btn btn-sm btn-light">Mark missed</button>
             </form>
+          {% endif %}
+
+          {% if column.can_review %}
+            {% if app.review %}
+              <span class="small">Your review: {{ app.review.stars }}★</span>
+            {% else %}
+              <form method="post" action="{% url 'review_creator' app.id %}">
+                {% csrf_token %}
+                {{ review_form.stars }}
+                {{ review_form.comment }}
+                <button type="submit" class="btn btn-sm">Review</button>
+              </form>
+            {% endif %}
           {% endif %}
         </div>
       {% empty %}

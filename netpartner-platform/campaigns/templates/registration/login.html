@@ -4,9 +4,9 @@
 
 {% block content %}
 <div>
-  <span class="eyebrow">Creators</span>
+  <span class="eyebrow">Welcome back</span>
   <h1>Log in</h1>
-  <p class="muted">See campaigns you can apply for.</p>
+  <p class="muted">Brands manage campaigns. Creators find deals.</p>
 </div>
 
 <form method="post" class="panel form-panel" style="max-width: 420px">
@@ -16,5 +16,6 @@
   {% endif %}
   {{ form.as_p }}
   <button type="submit" class="btn">Log in</button>
+  <p class="form-note">New here? <a href="/signup/creator/">Join as a creator</a> or <a href="/signup/brand/">join as a brand</a>.</p>
 </form>
 {% endblock %}

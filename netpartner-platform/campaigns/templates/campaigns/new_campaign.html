@@ -1,15 +1,30 @@
 {% extends "campaigns/base.html" %}
 
+{% block title %}New campaign · NetPartner{% endblock %}
+
 {% block content %}
 <a href="{% url 'home' %}">← Back to overview</a>
-<div>
-  <h1>New campaign</h1>
-  <p class="muted">Set it up in a few minutes. We check every campaign before it goes live.</p>
+
+<div class="page-head">
+  <div>
+    <span class="eyebrow">{{ request.user.brand_profile.name }}</span>
+    <h1>New campaign</h1>
+    <p class="muted">Gifted and physical UGC campaigns only go to creators with Rating 60+, 3 completed campaigns and a verified NZ audience.</p>
+  </div>
 </div>
 
-<form method="post" class="panel form-panel">
+<form method="post" class="card">
   {% csrf_token %}
-  {{ form.as_p }}
-  <button type="submit" class="btn">Submit campaign</button>
+  {% for field in form %}
+    <div class="field">
+      <label for="{{ field.id_for_label }}"><strong>{{ field.label }}</strong></label><br>
+      {{ field }}
+      {% for error in field.errors %}
+        <span class="small" style="color:#c0392b">{{ error }}</span>
+      {% endfor %}
+    </div>
+    <br>
+  {% endfor %}
+  <button type="submit" class="btn">Create campaign</button>
 </form>
 {% endblock %}

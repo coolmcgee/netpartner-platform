@@ -1,11 +1,13 @@
 {% extends "campaigns/base.html" %}
 
+{% block title %}Overview · NetPartner{% endblock %}
+
 {% block content %}
 <div class="page-head">
   <div>
     <span class="eyebrow">Overview</span>
-    <h1>Kia ora</h1>
-    <p class="muted">{{ campaigns|length }} campaigns · {{ pending_total }} creators waiting for a decision.</p>
+    <h1>Kia ora{% if user.brand_profile %}, {{ user.brand_profile.name }}{% endif %}</h1>
+    <p class="muted">{{ campaigns|length }} campaign{{ campaigns|length|pluralize }} · {{ pending_total }} creator{{ pending_total|pluralize }} waiting for a decision.</p>
   </div>
   <a href="/new/" class="btn">+ New campaign</a>
 </div>
@@ -25,10 +27,12 @@
         <strong>{{ campaign.name }}</strong>
         <span class="small">{{ campaign.brand.name }} · post by {{ campaign.post_by }}</span>
       </span>
-      {% if campaign.pending_count %}
+      {% if not campaign.approved %}
+        <span class="pill grey">Waiting for safety check</span>
+      {% elif campaign.pending_count %}
         <span class="pill">{{ campaign.pending_count }} to review</span>
       {% else %}
-        <span class="pill grey">{{ campaign.applicant_count }} applicants</span>
+        <span class="pill grey">{{ campaign.applicant_count }} applicant{{ campaign.applicant_count|pluralize }}</span>
       {% endif %}
       <span class="small">${{ campaign.budget|floatformat:"2g" }} budget</span>
     </a>

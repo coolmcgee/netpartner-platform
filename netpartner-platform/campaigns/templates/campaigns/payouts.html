@@ -1,0 +1,102 @@
+{% extends "campaigns/base.html" %}
+
+{% block title %}NetPartner admin · Payouts{% endblock %}
+
+{% block content %}
+{% if messages %}
+  {% for message in messages %}
+    <p class="pill grey">{{ message }}</p>
+  {% endfor %}
+{% endif %}
+
+<div class="page-head">
+  <div>
+    <span class="eyebrow">NetPartner admin</span>
+    <h1>This week's jobs</h1>
+    <p class="muted">Approve campaigns, then pay creators. Payouts unlock {{ wait_days }} days after posting, once a creator is owed ${{ payout_min }}+.</p>
+  </div>
+  <div class="spots">
+    <a href="/admin/" class="btn btn-sm btn-light">Django admin →</a>
+  </div>
+</div>
+
+<h2>1. Campaigns waiting for a safety check ({{ unapproved|length }})</h2>
+<p class="small muted">Check: no refused categories (alcohol, gambling, vapes, crypto), price at or above the tier minimum, #ad rule in the brief.</p>
+<div class="grid-2">
+  {% for c in unapproved %}
+    <article class="card">
+      <div class="card-head">
+        <div class="who">
+          <h2>{{ c.name }}</h2>
+          <span class="small">{{ c.brand.name }} · {{ c.get_campaign_type_display }}</span>
+        </div>
+        <span class="pill">${{ c.budget|floatformat:"0g" }}</span>
+      </div>
+      <p class="muted">{{ c.brief|truncatewords:40 }}</p>
+      <div class="metrics">
+        <div><span>Pay per creator</span><strong>${{ c.pay_per_creator|floatformat:"2g" }}</strong></div>
+        <div><span>Post by</span><strong>{{ c.post_by|date:"j M" }}</strong></div>
+        <div><span>Brand pays</span><strong>${{ c.total_to_pay|floatformat:"2g" }}</strong></div>
+      </div>
+      <form method="post" action="{% url 'approve_campaign' c.id %}">
+        {% csrf_token %}
+        <button type="submit" class="btn">Approve: go live</button>
+      </form>
+    </article>
+  {% empty %}
+    <p class="empty-col">Nothing to check.</p>
+  {% endfor %}
+</div>
+
+<h2>2. Ready to pay ({{ payable|length }})</h2>
+<p class="small muted">Send the bank transfer first, then click "Mark paid".</p>
+<div class="grid-2">
+  {% for row in payable %}
+    <article class="card">
+      <div class="card-head">
+        <span class="avatar">{{ row.creator.handle|first|upper }}</span>
+        <div class="who">
+          <h2>@{{ row.creator.handle }}</h2>
+          <span class="small">{{ row.creator.user.email }}</span>
+        </div>
+        <span class="pill lime">${{ row.total|floatformat:"2g" }}</span>
+      </div>
+      <ul>
+        {% for app in row.apps %}
+          <li>{{ app.campaign.name }}: ${{ app.amount|floatformat:"2g" }} (posted {{ app.posted_at|date:"j M" }})</li>
+        {% endfor %}
+      </ul>
+      <form method="post" action="{% url 'mark_paid' row.creator.id %}">
+        {% csrf_token %}
+        <button type="submit" class="btn">Mark paid</button>
+      </form>
+    </article>
+  {% empty %}
+    <p class="empty-col">Nobody to pay this week.</p>
+  {% endfor %}
+</div>
+
+{% if below_min %}
+  <h2>Under ${{ payout_min }}: rolls over to next week</h2>
+  <div class="grid-2">
+    {% for row in below_min %}
+      <div class="mini">
+        <strong>@{{ row.creator.handle }}</strong>
+        <span class="small">Owed ${{ row.total|floatformat:"2g" }}</span>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
+
+<h2>3. In the {{ wait_days }}-day view check ({{ waiting|length }})</h2>
+<div class="grid-2">
+  {% for app in waiting %}
+    <div class="mini">
+      <strong>@{{ app.creator.handle }}</strong>
+      <span class="small">{{ app.campaign.name }} · ${{ app.amount|floatformat:"2g" }} · posted {{ app.posted_at|date:"j M"|default:"(no date)" }}</span>
+    </div>
+  {% empty %}
+    <p class="empty-col">None.</p>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -20,33 +20,56 @@
 {% if creator.is_paused %}
   <div class="card rejected">
     <h2>Applying is paused</h2>
-    <p class="muted">You've missed 3 posts in 90 days, so you can't apply for 2 weeks. Your Rating will climb back with on-time posts.</p>
+    <p class="muted">You've missed 3 posts in 90 days, so you can't apply for 2 weeks. Your Rating climbs back with on-time posts.</p>
   </div>
 {% endif %}
 
 <div class="stats">
   <div class="stat"><span class="label">Tier</span><span class="big">{{ creator.tier }}</span></div>
   <div class="stat dark"><span class="label">Rating</span><span class="big">{{ creator.rating }}</span></div>
-  <div class="stat"><span class="label">Followers</span><span class="big">{{ creator.followers }}</span></div>
+  <div class="stat"><span class="label">Completed</span><span class="big">{{ creator.completed_count }}</span></div>
 </div>
 
-<h2>Open campaigns</h2>
+<div class="stats">
+  <div class="stat"><span class="label">In progress</span><span class="big">${{ earn_in_progress|floatformat:"2g" }}</span></div>
+  <div class="stat"><span class="label">To be paid</span><span class="big">${{ earn_to_be_paid|floatformat:"2g" }}</span></div>
+  <div class="stat dark"><span class="label">Paid out</span><span class="big">${{ earn_paid|floatformat:"2g" }}</span></div>
+</div>
+<p class="small muted">Paid weekly, 7 days after your post is verified, once you're owed $20 or more.</p>
+
+<div class="card">
+  {% if gate_missing %}
+    <h2>Unlock gifted products &amp; UGC</h2>
+    <p class="muted">Brands can send you products once you have:</p>
+    <ul>
+      {% for item in gate_missing %}<li>{{ item }}</li>{% endfor %}
+    </ul>
+  {% else %}
+    <h2>Products unlocked ✓</h2>
+    <p class="muted">Brands can now send you gifted products and UGC campaigns.</p>
+  {% endif %}
+</div>
+
+<h2>Campaigns you can apply for</h2>
 <div class="grid-2">
-  {% for campaign in campaigns %}
+  {% for row in available %}
+    {% with campaign=row.campaign %}
     <article class="card">
       <div class="card-head">
         <span class="avatar">{{ campaign.brand.name|first|upper }}</span>
         <div class="who">
           <h2>{{ campaign.name }}</h2>
-          <span class="small">{{ campaign.brand.name }}</span>
+          <span class="small">{{ campaign.brand.name }} · {{ campaign.get_campaign_type_display }}</span>
         </div>
-        <span class="pill">${{ campaign.budget|floatformat:"0g" }}</span>
+        {% if campaign.needs_product %}<span class="pill lime">Product</span>{% endif %}
       </div>
 
       <p class="muted">{{ campaign.brief|truncatewords:25 }}</p>
 
       <div class="metrics">
         <div><span>Post by</span><strong>{{ campaign.post_by|date:"j M" }}</strong></div>
+        <div><span>Pays</span><strong>{% if campaign.pay_per_creator %}${{ campaign.pay_per_creator|floatformat:"0g" }}{% else %}Gifted{% endif %}</strong></div>
+        <div><span>Min tier</span><strong>{{ campaign.min_tier }}</strong></div>
       </div>
 
       {% if campaign.id in applied_ids %}
@@ -60,10 +83,24 @@
         </form>
       {% endif %}
     </article>
+    {% endwith %}
   {% empty %}
-    <p class="empty">No campaigns open right now. Check back soon.</p>
+    <p class="empty">No campaigns open for you right now. Check back soon.</p>
   {% endfor %}
 </div>
+
+{% if locked %}
+  <h2>Locked for now</h2>
+  <div class="grid-2">
+    {% for row in locked %}
+      <div class="mini">
+        <strong>{{ row.campaign.name }} · {{ row.campaign.brand.name }}</strong>
+        <span class="small">{{ row.campaign.get_campaign_type_display }}</span>
+        <span class="small">🔒 {{ row.reason }}</span>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
 
 <h2>Rating history</h2>
 {% if rating_events %}

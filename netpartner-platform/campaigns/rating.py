@@ -12,6 +12,9 @@ POINTS = {
     "missed": -10,    # never posted
 }
 
+# Brand review stars -> Rating change
+REVIEW_POINTS = {5: 3, 4: 1, 3: 0, 2: -2, 1: -4}
+
 
 def change_rating(creator, application, change, reason):
     """Adjust a creator's Rating once per application per reason, and log it."""
@@ -45,3 +48,11 @@ def on_status_change(application):
 
     elif status == "missed":
         change_rating(creator, application, POINTS["missed"], "Missed post")
+
+
+def apply_review(review):
+    """Call after a brand leaves a review."""
+    change = REVIEW_POINTS.get(review.stars, 0)
+    change_rating(
+        review.application.creator, review.application, change, f"Brand review ({review.stars}★)"
+    )
