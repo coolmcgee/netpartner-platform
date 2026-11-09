@@ -26,6 +26,20 @@ class Creator(models.Model):
     followers = models.PositiveIntegerField(default=0)
     rating = models.PositiveIntegerField(default=50)  # everyone starts at 50
 
+    @property
+    def tier(self):
+        if self.followers < 1000:
+            return "Starter"
+        if self.followers < 5000:
+            return "Emerging"
+        if self.followers < 10000:
+            return "Rising"
+        if self.followers < 50000:
+            return "Established"
+        if self.followers < 100000:
+            return "Premier"
+        return "Signature"
+
     def __str__(self):
         return self.handle
 

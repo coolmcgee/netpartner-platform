@@ -1,0 +1,39 @@
+{% extends "campaigns/base.html" %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <span class="eyebrow">Overview</span>
+    <h1>Kia ora</h1>
+    <p class="muted">{{ campaigns|length }} campaigns · {{ pending_total }} creators waiting for a decision.</p>
+  </div>
+  <a href="/new/" class="btn">+ New campaign</a>
+</div>
+
+<div class="stats">
+  <div class="stat"><span class="label">Campaigns</span><span class="big">{{ campaigns|length }}</span></div>
+  <div class="stat"><span class="label">Creators accepted</span><span class="big">{{ accepted_total }}</span></div>
+  <div class="stat dark"><span class="label">Waiting for review</span><span class="big">{{ pending_total }}</span></div>
+  <div class="stat"><span class="label">Total budget</span><span class="big">${{ total_budget }}</span></div>
+</div>
+
+<section class="panel">
+  <h2>Your campaigns</h2>
+  {% for campaign in campaigns %}
+    <a href="{% url 'campaign_detail' campaign.id %}" class="row">
+      <span class="row-title">
+        <strong>{{ campaign.name }}</strong>
+        <span class="small">{{ campaign.brand.name }} · post by {{ campaign.post_by }}</span>
+      </span>
+      {% if campaign.pending_count %}
+        <span class="pill">{{ campaign.pending_count }} to review</span>
+      {% else %}
+        <span class="pill grey">{{ campaign.applicant_count }} applicants</span>
+      {% endif %}
+      <span class="small">${{ campaign.budget }} budget</span>
+    </a>
+  {% empty %}
+    <p class="empty">No campaigns yet. <a href="/new/">Create your first one →</a></p>
+  {% endfor %}
+</section>
+{% endblock %}

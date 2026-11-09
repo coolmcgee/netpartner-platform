@@ -1,0 +1,57 @@
+{% extends "campaigns/base.html" %}
+
+{% block title %}{{ campaign.name }} · NetPartner{% endblock %}
+
+{% block content %}
+<a href="{% url 'home' %}">← Back to overview</a>
+
+<div class="page-head">
+  <div>
+    <span class="eyebrow">{{ campaign.brand.name }} · ${{ campaign.budget }} budget · post by {{ campaign.post_by }}</span>
+    <h1>Pick your creators</h1>
+    <p class="muted">{{ campaign.name }}: {{ campaign.brief }}</p>
+  </div>
+  <div class="spots">
+    <span class="label">Accepted</span>
+    <span class="big">{{ accepted_count }} of {{ applications|length }}</span>
+  </div>
+</div>
+
+<div class="grid-2">
+  {% for app in applications %}
+    <article class="card {{ app.status }}">
+      <div class="card-head">
+        <span class="avatar">{{ app.creator.handle|first|upper }}</span>
+        <div class="who">
+          <h2>@{{ app.creator.handle }}</h2>
+          <span class="small">{{ app.creator.niche }}</span>
+        </div>
+        <span class="pill">{{ app.creator.tier }}</span>
+      </div>
+
+      <div class="metrics">
+        <div><span>Rating</span><strong style="color:#4A2FC4">{{ app.creator.rating }}</strong></div>
+        <div><span>Followers</span><strong>{{ app.creator.followers }}</strong></div>
+        <div><span>Applied</span><strong>{{ app.applied_at|date:"j M" }}</strong></div>
+      </div>
+
+      {% if app.status == "pending" %}
+        <div class="actions">
+          <form method="post" action="{% url 'update_application' app.id 'accept' %}">
+            {% csrf_token %}
+            <button type="submit" class="btn">Accept</button>
+          </form>
+          <form method="post" action="{% url 'update_application' app.id 'decline' %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-light">Decline</button>
+          </form>
+        </div>
+      {% else %}
+        <span class="pill {% if app.status == 'accepted' %}lime{% else %}grey{% endif %}">{{ app.get_status_display }}</span>
+      {% endif %}
+    </article>
+  {% empty %}
+    <p class="empty">No applications yet.</p>
+  {% endfor %}
+</div>
+{% endblock %}
