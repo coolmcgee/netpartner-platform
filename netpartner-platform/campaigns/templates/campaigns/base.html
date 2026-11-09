@@ -17,8 +17,7 @@
     </a>
     {% with page=request.resolver_match.url_name %}
     <div class="nav">
-      <a href="{% url 'home' %}" class="{% if page == 'home' or page == 'campaign_detail' %}active{% endif %}">Overview</a>
-      <a href="/new/" class="{% if page == 'new_campaign' %}active{% endif %}">New campaign</a>
+      <a href="{% url 'home' %}" class="{% if page == 'home' or page == 'campaign_detail' or page == 'campaign_tracker' %}active{% endif %}">Overview</a>      <a href="/new/" class="{% if page == 'new_campaign' %}active{% endif %}">New campaign</a>
       <a href="/admin/">Admin</a>
     </div>
     {% endwith %}

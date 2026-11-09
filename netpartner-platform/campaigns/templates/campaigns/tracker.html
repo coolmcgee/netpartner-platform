@@ -1,0 +1,47 @@
+{% extends "campaigns/base.html" %}
+
+{% block title %}Tracker · {{ campaign.name }}{% endblock %}
+
+{% block content %}
+<a href="{% url 'campaign_detail' campaign.id %}">← Back to applicants</a>
+
+<div class="page-head">
+  <div>
+    <span class="eyebrow">{{ campaign.brand.name }} · post by {{ campaign.post_by }}</span>
+    <h1>{{ campaign.name }}</h1>
+    <p class="muted">Where every creator is up to.</p>
+  </div>
+</div>
+
+<div class="stats">
+  <div class="stat"><span class="label">Creators working</span><span class="big">{{ working_count }}</span></div>
+  <div class="stat dark"><span class="label">Posts live</span><span class="big">{{ posted_count }} of {{ working_count }}</span></div>
+  <div class="stat"><span class="label">Budget</span><span class="big">${{ campaign.budget|floatformat:"2g" }}</span></div>
+</div>
+
+<div class="board">
+  {% for column in columns %}
+    <div class="column {% if column.status == 'paid' %}dark{% endif %}">
+      <div class="column-head">
+        <span>{{ column.label }}</span>
+        <span class="count">{{ column.apps|length }}</span>
+      </div>
+
+      {% for app in column.apps %}
+        <div class="mini">
+          <strong>@{{ app.creator.handle }}</strong>
+          <span class="small">{{ app.creator.tier }} · Rating {{ app.creator.rating }}</span>
+          {% if column.button %}
+            <form method="post" action="{% url 'update_application' app.id 'advance' %}">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-sm">{{ column.button }}</button>
+            </form>
+          {% endif %}
+        </div>
+      {% empty %}
+        <p class="empty-col">Nobody here yet.</p>
+      {% endfor %}
+    </div>
+  {% endfor %}
+</div>
+{% endblock %}

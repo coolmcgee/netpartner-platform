@@ -14,7 +14,7 @@
   <div class="stat"><span class="label">Campaigns</span><span class="big">{{ campaigns|length }}</span></div>
   <div class="stat"><span class="label">Creators accepted</span><span class="big">{{ accepted_total }}</span></div>
   <div class="stat dark"><span class="label">Waiting for review</span><span class="big">{{ pending_total }}</span></div>
-  <div class="stat"><span class="label">Total budget</span><span class="big">${{ total_budget }}</span></div>
+  <div class="stat"><span class="label">Total budget</span><span class="big">${{ total_budget|floatformat:"2g" }}</span></div>
 </div>
 
 <section class="panel">
@@ -30,7 +30,7 @@
       {% else %}
         <span class="pill grey">{{ campaign.applicant_count }} applicants</span>
       {% endif %}
-      <span class="small">${{ campaign.budget }} budget</span>
+      <span class="small">${{ campaign.budget|floatformat:"2g" }} budget</span>
     </a>
   {% empty %}
     <p class="empty">No campaigns yet. <a href="/new/">Create your first one →</a></p>
