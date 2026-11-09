@@ -5,7 +5,7 @@ class Brand(models.Model):
     name = models.CharField(max_length=100)
     email = models.EmailField()
     website = models.URLField(blank=True)
-
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="brand_profile",)
 
     def __str__(self):
         return self.name

@@ -13,4 +13,5 @@ urlpatterns = [
     path("accounts/", include("django.contrib.auth.urls")),
     path("creator/", views.creator_home, name="creator_home"),
     path("campaign/<int:campaign_id>/apply/", views.apply, name="apply"),
+    path("after-login/", views.after_login, name="after_login"),
 ]

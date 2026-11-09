@@ -128,5 +128,5 @@ MAILERS = {
 }
 
 LOGIN_URL = "login"
-LOGIN_REDIRECT_URL = "creator_home"
+LOGIN_REDIRECT_URL = "after_login"
 LOGOUT_REDIRECT_URL = "login"

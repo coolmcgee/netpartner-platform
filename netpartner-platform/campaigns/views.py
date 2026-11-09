@@ -1,129 +1,112 @@
-from django.shortcuts import render, get_object_or_404, redirect
-from django.views.decorators.http import require_POST
-from django.db.models import Count, Q, Sum
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import PermissionDenied
+from django.shortcuts import render, redirect, get_object_or_404
 
-from .models import Campaign, Application
+from .access import brand_required, my_campaigns
 from .forms import CampaignForm
+from .models import Application, Campaign, Creator
+
+TRACKER_STAGES = ["accepted", "drafting", "posted", "verified", "paid"]
 
 
+@login_required
+def after_login(request):
+    if hasattr(request.user, "brand_profile"):
+        return redirect("home")
+    if hasattr(request.user, "creator"):
+        return redirect("creator_home")
+    return redirect("/admin/")
+
+
+@brand_required
 def home(request):
-    campaigns = (
-        Campaign.objects.select_related("brand")
-        .annotate(
-            applicant_count=Count("applications"),
-            pending_count=Count("applications", filter=Q(applications__status="pending")),
-        )
-        .order_by("post_by")
-    )
+    campaigns = my_campaigns(request)
+    applications = Application.objects.filter(campaign__in=campaigns)
     return render(request, "campaigns/home.html", {
         "campaigns": campaigns,
-        "pending_total": Application.objects.filter(status="pending").count(),
-        "accepted_total": Application.objects.filter(status="accepted").count(),
-        "total_budget": Campaign.objects.aggregate(total=Sum("budget"))["total"] or 0,
+        "applications": applications.order_by("-id")[:10],
+        "pending": applications.filter(status="pending").count(),
+        "active": applications.filter(status__in=TRACKER_STAGES[:-1]).count(),
     })
 
 
+@brand_required
 def new_campaign(request):
+    if request.brand is None:
+        raise PermissionDenied  # superuser with no Brand: create via /admin/
     if request.method == "POST":
         form = CampaignForm(request.POST)
         if form.is_valid():
-            form.save()
-            return redirect("home")
+            campaign = form.save(commit=False)
+            campaign.brand = request.brand
+            campaign.save()
+            return redirect("campaign_detail", campaign_id=campaign.id)
     else:
         form = CampaignForm()
     return render(request, "campaigns/new_campaign.html", {"form": form})
 
 
+@brand_required
 def campaign_detail(request, campaign_id):
-    campaign = get_object_or_404(Campaign, id=campaign_id)
-    applications = (
-        Application.objects.filter(campaign=campaign)
-        .select_related("creator")
-        .order_by("-applied_at")
-    )
+    campaign = get_object_or_404(my_campaigns(request), id=campaign_id)
+    applications = Application.objects.filter(campaign=campaign)
     return render(request, "campaigns/campaign_detail.html", {
         "campaign": campaign,
         "applications": applications,
-        "accepted_count": applications.filter(status="accepted").count(),
     })
 
 
-# Tracker columns: (status, column title, button label to move to the next stage)
-TRACKER_STAGES = [
-    ("accepted", "Accepted", "Start drafting"),
-    ("drafting", "Drafting", "Mark posted"),
-    ("posted", "Posted", "Verify post"),
-    ("verified", "Verified", "Mark paid"),
-    ("paid", "Paid", None),
-]
+@brand_required
+def update_application(request, application_id, action):
+    application = get_object_or_404(
+        Application, id=application_id, campaign__in=my_campaigns(request)
+    )
+    if action == "accept":
+        application.status = "accepted"
+    elif action == "decline":
+        application.status = "declined"
+    elif action in TRACKER_STAGES:
+        application.status = action
+    else:
+        raise PermissionDenied
+    application.save()
 
-NEXT_STATUS = {
-    "accepted": "drafting",
-    "drafting": "posted",
-    "posted": "verified",
-    "verified": "paid",
-}
+    if action in TRACKER_STAGES and action != "accepted":
+        return redirect("campaign_tracker", campaign_id=application.campaign.id)
+    return redirect("campaign_detail", campaign_id=application.campaign.id)
 
 
+@brand_required
 def campaign_tracker(request, campaign_id):
-    campaign = get_object_or_404(Campaign, id=campaign_id)
-    apps = list(campaign.applications.select_related("creator"))
-
+    campaign = get_object_or_404(my_campaigns(request), id=campaign_id)
+    applications = Application.objects.filter(campaign=campaign)
     columns = [
-        {
-            "status": status,
-            "label": label,
-            "button": button,
-            "apps": [a for a in apps if a.status == status],
-        }
-        for status, label, button in TRACKER_STAGES
+        {"stage": stage, "applications": applications.filter(status=stage)}
+        for stage in TRACKER_STAGES
     ]
-
     return render(request, "campaigns/tracker.html", {
         "campaign": campaign,
         "columns": columns,
-        "working_count": sum(len(c["apps"]) for c in columns),
-        "posted_count": sum(1 for a in apps if a.status in ("posted", "verified", "paid")),
     })
-
-
-@require_POST
-def update_application(request, application_id, action):
-    application = get_object_or_404(Application, id=application_id)
-
-    # Accept / decline on the applicants page
-    if action in ("accept", "decline"):
-        if application.status == "pending":
-            application.status = "accepted" if action == "accept" else "rejected"
-            application.save()
-        return redirect("campaign_detail", campaign_id=application.campaign_id)
-
-    # Move one stage along on the tracker
-    if action == "advance":
-        next_status = NEXT_STATUS.get(application.status)
-        if next_status:
-            application.status = next_status
-            application.save()
-        return redirect("campaign_tracker", campaign_id=application.campaign_id)
-
-    return redirect("home")
 
 @login_required
 def creator_home(request):
-    creator = getattr(request.user, "creator", None)
-    rows = []
-    if creator:
-        applied = {a.campaign_id: a for a in creator.applications.all()}
-        campaigns = Campaign.objects.select_related("brand").order_by("post_by")
-        rows = [{"campaign": c, "application": applied.get(c.id)} for c in campaigns]
-    return render(request, "campaigns/creator_home.html", {"creator": creator, "rows": rows})
+    creator = get_object_or_404(Creator, user=request.user)
+    applied_ids = set(
+        Application.objects.filter(creator=creator).values_list("campaign_id", flat=True)
+    )
+    return render(request, "campaigns/creator_home.html", {
+        "creator": creator,
+        "campaigns": Campaign.objects.all(),
+        "applied_ids": applied_ids,
+    })
+
 
 @login_required
-@require_POST
 def apply(request, campaign_id):
-    creator = getattr(request.user, "creator", None)
-    if creator:
-        campaign = get_object_or_404(Campaign, id=campaign_id)
-        Application.objects.get_or_create(creator=creator, campaign=campaign)
+    creator = get_object_or_404(Creator, user=request.user)
+    campaign = get_object_or_404(Campaign, id=campaign_id)
+    Application.objects.get_or_create(
+        campaign=campaign, creator=creator, defaults={"status": "pending"}
+    )
     return redirect("creator_home")
