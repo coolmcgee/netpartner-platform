@@ -7,12 +7,14 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.exceptions import PermissionDenied
 from django.db.models import Sum
 from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from .access import brand_required, my_campaigns
+from .eligibility import account_eligibility, eligible_campaigns
 from .forms import BrandSignupForm, CampaignForm, CreatorSignupForm, ReviewForm
-from .models import PAYOUT_MIN, PAYOUT_WAIT_DAYS, Application, Campaign, Creator
+from .models import PAYOUT_MIN, PAYOUT_WAIT_DAYS, Application, Campaign, Creator, SocialAccount
 from .rating import apply_review, on_status_change
 
 TRACKER_STAGES = ["accepted", "drafting", "posted", "verified", "paid"]
@@ -213,25 +215,33 @@ def campaign_tracker(request, campaign_id):
 
 # ---------- Creator side ----------
 
+def _pick_account(request, creator):
+    """The social account the creator is looking through (?account=ID), else their first."""
+    first = creator.ensure_account()
+    account_id = request.POST.get("account") or request.GET.get("account")
+    if account_id and str(account_id).isdigit():
+        return get_object_or_404(SocialAccount, id=int(account_id), creator=creator)
+    return first
+
+
 @login_required
 def creator_home(request):
     creator = get_object_or_404(Creator, user=request.user)
+    account = _pick_account(request, creator)
     mine = Application.objects.filter(creator=creator)
-    applied_ids = set(mine.values_list("campaign_id", flat=True))
+    applied_ids = set(mine.filter(social_account=account).values_list("campaign_id", flat=True))
 
-    # Split live campaigns into ones this creator can apply for and locked ones (with the reason)
-    available, locked = [], []
-    for campaign in Campaign.objects.filter(approved=True).select_related("brand").order_by("post_by"):
-        ok, reason = creator.eligibility(campaign)
-        row = {"campaign": campaign, "reason": reason}
-        (available if ok else locked).append(row)
+    # Creators only see campaigns this account can do (no locked list)
+    available = [{"campaign": c, "reason": ""} for c in eligible_campaigns(account)]
 
     return render(request, "campaigns/creator_home.html", {
         "creator": creator,
+        "account": account,
+        "accounts": creator.accounts.all(),
         "available": available,
-        "locked": locked,
+        "locked": [],
         "applied_ids": applied_ids,
-        "gate_missing": creator.product_gate_missing(),
+        "gate_missing": account.product_gate_missing(),
         "rating_events": creator.rating_events.all()[:10],
         "earn_in_progress": _total(mine.filter(status__in=["accepted", "drafting", "posted"])),
         "earn_to_be_paid": _total(mine.filter(status="verified")),
@@ -246,16 +256,17 @@ def apply(request, campaign_id):
         messages.error(request, "You've missed 3 posts in 90 days, so applying is paused for 2 weeks.")
         return redirect("creator_home")
     campaign = get_object_or_404(Campaign, id=campaign_id, approved=True)
-    ok, reason = creator.eligibility(campaign)
+    account = _pick_account(request, creator)
+    ok, reason = account_eligibility(account, campaign)
     if not ok:
         messages.error(request, f"You can't apply for {campaign.name} yet. {reason}.")
         return redirect("creator_home")
     Application.objects.get_or_create(
-        campaign=campaign, creator=creator,
-        defaults={"status": Application.Status.PENDING},
+        campaign=campaign, social_account=account,
+        defaults={"creator": creator, "status": Application.Status.PENDING},
     )
     messages.success(request, f"Applied for {campaign.name}. The brand will review your application.")
-    return redirect("creator_home")
+    return redirect(f"{reverse('creator_home')}?account={account.id}")
 
 
 # ---------- NetPartner admin (Oli only) ----------
